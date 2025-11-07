@@ -292,23 +292,18 @@ export class DefaultHtmlToOperations extends HtmlOperations {
       if (indentLevel > 0) attributes.indent = indentLevel;
       const nodes = item.childNodes;
       nodes.forEach((node) => {
-        if (node instanceof TextNode) {
-          delta.insert(node.text || '');
-        } else if (node instanceof HTMLElement) {
-          const element = node;
-          let ops: Op[] = [];
-
-          // If found an element list within another list, then this is nested and must insert first the block attributes
-          // to separate the current element from the nested list elements
-          if (element.localName === 'ul' || element.localName === 'ol') {
-            indent++;
-            ignoreBlockAttributesInsertion = true;
-            delta.insert('\n', attributes);
-          }
-          ops = this.resolveCurrentElement(element, indent);
+        // If found an element list within another list, then this is nested and must insert first the block attributes
+        // to separate the current element from the nested list elements
+        if (node instanceof HTMLElement && (node.localName === 'ul' || node.localName === 'ol')) {
+          indent++;
+          ignoreBlockAttributesInsertion = true;
+          delta.insert('\n', attributes);
+          const ops = this.resolveCurrentElement(node, indent);
           ops.forEach((op) => {
             delta.insert(op.insert!, op.attributes);
           });
+        } else {
+          processNode(node, {}, delta, false, this.customBlocks);
         }
       });
 
